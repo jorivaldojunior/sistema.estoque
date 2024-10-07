@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sistema de Controle de Estoque</title>
+
+    <!-- Tailwind CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <!-- SweetAlert2 CSS -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css"
+    />
+    <!-- SweetAlert2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+      .screen {
+        background-image: url("https://img.freepik.com/fotos-gratis/interior-de-grande-armazem-de-distribuicao-com-prateleiras-repletas-de-paletas-e-produtos-prontos-para-o-mercado_342744-1481.jpg");
+        background-size: cover;
+        background-repeat: no-repeat;
+        position: relative;
+      }
+
+      .overlay-bg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7); /* Fundo escuro com opacidade */
+        z-index: 1;
+      }
+
+      .content {
+        position: relative;
+        z-index: 2; /* Conteúdo acima do overlay */
+        text-align: center;
+      }
+
+      .fade-in {
+        opacity: 0;
+        animation: fadeIn 1s forwards;
+      }
+
+      @keyframes fadeIn {
+        to {
+          opacity: 1;
+        }
+      }
+
+      .hover-transition {
+        transition: background-color 0.3s ease, transform 0.3s ease;
+      }
+
+      .hover-transition:hover {
+        transform: scale(1.05);
+      }
+
+      /* Estilo padrão para o modal */
+      .modal {
+        max-width: 500px;
+        width: 100%;
+        background-color: white;
+        padding: 50px;
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
+      }
+    </style>
+  </head>
+
+  <body class="bg-gray-100">
+    <!-- Tela de Cadastro de Produto -->
+    <div
+      id="cadastroProdutoScreen"
+      class="screen h-screen flex flex-col justify-center items-center bg-gradient-to-b from-purple-600 to-gray-100 text-white fade-in"
+    >
+      <div class="overlay-bg"></div>
+      <div class="content">
+        <h1 class="text-4xl font-extrabold mb-4 text-blue-500 text-center">
+          Sistema de Controle de Estoque
+        </h1>
+        <h2 class="text-3xl font-bold mb-8">Cadastrar Produto:</h2>
+
+        <form
+          id="produtoForm"
+          class="bg-white shadow-md rounded-lg px-8 pt-6 pb-8 mb-4 max-w-lg w-full"
+        >
+          <div class="mb-4">
+            <input
+              id="nomeProduto"
+              type="text"
+              placeholder="Nome do Produto"
+              class="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            />
+          </div>
+          <div class="mb-4">
+            <input
+              id="marcaProduto"
+              type="text"
+              placeholder="Marca"
+              class="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            />
+          </div>
+          <div class="mb-4">
+            <input
+              id="quantidadeProduto"
+              type="number"
+              placeholder="Quantidade"
+              class="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            />
+          </div>
+          <!-- Campo de Data de Recebimento -->
+          <div class="mb-4">
+            <input
+              id="dataRecebimento"
+              type="date"
+              class="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            />
+          </div>
+
+          <div class="flex justify-between">
+            <button
+              type="button"
+              onclick="cadastrarProduto()"
+              class="bg-blue-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline hover-transition"
+            >
+              Cadastrar
+            </button>
+          </div>
+        </form>
+
+        <button
+          id="btnFechar"
+          class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded mt-4"
+        >
+          Sair X
+        </button>
+
+        <button
+          onclick="navigateToListaProdutos()"
+          class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg mt-4 hover-transition"
+        >
+          Ver Lista de Produtos
+        </button>
+      </div>
+    </div>
+
+    <!-- Tela de Lista de Produtos -->
+    <div
+      id="listaProdutosScreen"
+      class="screen hidden h-screen flex flex-col justify-center items-center bg-gradient-to-b from-blue-600 to-gray-100 text-white fade-in"
+    >
+      <div class="overlay-bg"></div>
+      <div class="content">
+        <h1 class="text-4xl font-extrabold mb-4 text-blue-500 text-center">
+          Produtos Cadastrados
+        </h1>
+        <div class="flex justify-between items-center mb-4">
+          <h1 class="text-2xl font-bold">Lista de Produtos</h1>
+          <div class="relative">
+            <input
+              type="text"
+              id="filtroProduto"
+              class="border rounded-lg px-4 py-2 text-gray-700"
+              placeholder="Buscar produto..."
+              oninput="filtrarProdutos()"
+            />
+            <ul
+              id="sugestoes"
+              class="absolute bg-white text-gray-700 border-gray-300 rounded-lg mt-1 hidden max-h-40 overflow-y-auto z-10"
+            ></ul>
+          </div>
+        </div>
+
+        <table class="table-auto bg-white rounded-lg shadow-lg">
+          <thead>
+            <tr class="bg-blue-600 text-white">
+              <th class="px-4 py-2">ID</th>
+              <th class="px-4 py-2">Nome do Produto</th>
+              <th class="px-4 py-2">Marca do Produto</th>
+              <th class="px-4 py-2">Quantidade Atual</th>
+              <th class="px-4 py-2">Data de Lançamento</th>
+              <th class="px-4 py-2">Última Movimentação</th>
+              <th class="px-4 py-2">Colaboradores Envolvidos</th>
+              <th class="px-4 py-2">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="listaProdutos" class="text-gray-700">
+            <!-- Linhas de produtos serão inseridas aqui dinamicamente -->
+          </tbody>
+        </table>
+
+        <button
+          onclick="navigateToCadastroProduto()"
+          class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg mt-8 hover-transition"
+        >
+          Voltar ao Cadastro
+        </button>
+
+        <button
+          onclick="navigateToEstoqueZerado()"
+          class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg mt-4 hover-transition"
+        >
+          Ver Estoque Zerado
+        </button>
+      </div>
+    </div>
+
+    <!-- Tela de Produtos com Estoque Zerado -->
+    <div
+      id="estoqueZeradoScreen"
+      class="screen hidden h-screen flex flex-col justify-center items-center bg-gradient-to-b from-purple-600 to-gray-100 text-white fade-in"
+    >
+      <div class="overlay-bg"></div>
+      <div class="content">
+        <h1 class="text-4xl font-extrabold mb-4 text-red-500 text-center">
+          Produtos com Estoque Zerado
+        </h1>
+        <table class="table-auto bg-white rounded-lg shadow-lg">
+          <thead>
+            <tr class="bg-red-600 text-white">
+              <th class="px-4 py-2">ID</th>
+              <th class="px-4 py-2">Nome do Produto</th>
+              <th class="px-4 py-2">Marca do Produto</th>
+              <th class="px-4 py-2">Quantidade Atual</th>
+              <th class="px-4 py-2">Data de Lançamento</th>
+              <th class="px-4 py-2">Última Movimentação</th>
+              <th class="px-4 py-2">Colaboradores Envolvidos</th>
+            </tr>
+          </thead>
+          <tbody id="listaEstoqueZerado" class="text-gray-700">
+            <!-- Linhas de produtos com estoque zerado serão inseridas aqui dinamicamente -->
+          </tbody>
+        </table>
+
+        <button
+          onclick="navigateToListaProdutos()"
+          class="bg-green-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg mt-8 hover-transition"
+        >
+          Voltar à Lista de Produtos
+        </button>
+      </div>
+    </div>
+
+    <!-- Modal de Edição de Produto -->
+    <div
+      id="editarModal"
+      class="hidden fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center"
+    >
+      <div class="modal">
+        <h2 class="text-2xl font-bold mb-4">Editar Produto</h2>
+        <form id="editarForm">
+          <div class="mb-4">
+            <input
+              id="editarNome"
+              type="text"
+              placeholder="Nome do Produto"
+              class="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            />
+          </div>
+          <div class="mb-4">
+            <input
+              id="editarMarca"
+              type="text"
+              placeholder="Marca"
+              class="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            />
+          </div>
+          <div class="mb-4">
+            <input
+              id="editarQuantidade"
+              type="number"
+              placeholder="Quantidade"
+              class="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            />
+          </div>
+          <!-- Data de Recebimento Não Editável -->
+          <div class="mb-4">
+            <input
+              id="editarDataRecebimento"
+              type="date"
+              disabled
+              class="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            />
+          </div>
+          <!-- Campo para Nome do Colaborador -->
+          <div class="mb-4">
+            <input
+              id="nomeColaborador"
+              type="text"
+              placeholder="Nome do Colaborador"
+              class="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            />
+          </div>
+          <div class="flex justify-between">
+            <button
+              type="button"
+              onclick="atualizarProduto()"
+              class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline hover-transition"
+            >
+              Atualizar
+            </button>
+            <button
+              type="button"
+              onclick="fecharModal()"
+              class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline hover-transition"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal de Pedido -->
+    <div
+      id="modalPedido"
+      class="hidden fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center"
+    >
+      <div class="modal">
+        <h2 class="text-2xl font-bold mb-4">Adicionar Pedido</h2>
+        <div class="mb-4">
+          <label>Produto:</label>
+          <input
+            id="pedidoNomeProduto"
+            type="text"
+            disabled
+            class="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight"
+          />
+        </div>
+        <div class="mb-4">
+          <label>Marca:</label>
+          <input
+            id="pedidoMarcaProduto"
+            type="text"
+            disabled
+            class="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight"
+          />
+        </div>
+        <div class="mb-4">
+          <label>Quantidade:</label>
+          <input
+            id="pedidoQuantidade"
+            type="number"
+            placeholder="Quantidade a Pedir"
+            class="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight"
+          />
+        </div>
+        <div class="flex justify-between">
+          <button
+            onclick="adicionarAoCarrinho()"
+            class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+          >
+            Adicionar ao Carrinho
+          </button>
+          <button
+            onclick="fecharModalPedido()"
+            class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded"
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Carrinho -->
+    <div
+      id="modalCarrinho"
+      class="hidden fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center"
+    >
+      <div class="modal">
+        <h2 class="text-2xl font-bold mb-4">
+          Adicione seus pedidos de compras!
+        </h2>
+        <ul id="listaCarrinho" class="mb-4">
+          <!-- Itens do carrinho serão inseridos aqui -->
+        </ul>
+        <div class="flex justify-between">
+          <button
+            onclick="enviarPedidoWhatsApp()"
+            class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          >
+            Enviar Pedido
+          </button>
+          <button
+            onclick="fecharModalCarrinho()"
+            class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded"
+          >
+            Fechar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ícone de Carrinho de Compras -->
+    <div id="carrinhoIcon" class="fixed top-4 right-4 flex items-center">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        class="w-8 h-8 text-white cursor-pointer"
+        onclick="abrirCarrinho()"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M3 3h2l.344 2.735a1 1 0 00.732.77l.054.01 9.625 1.613 2.344-8.586A1 1 0 0017.417 0H3.732L3 3zm0 0h14v12h-2v-6a1 1 0 00-1-1h-2a1 1 0 00-1 1v6H4v2h14.382l1.618-1.382H22v-8a1 1 0 00-1-1H6"
+        />
+      </svg>
+      <!-- Contador do Carrinho -->
+      <span id="contadorCarrinho" class="ml-2 text-white text-lg">0</span>
+    </div>
+
+    <script src="./script.js"></script>
+  </body>
+</html>
